@@ -1,0 +1,6 @@
+```{r read-in-data}
+library(readr)
+bar_24 <- read_csv("data/sand_bar_to_bar_island_usage_survey-2024-04-17_08.05.40.csv")
+
+```
+
