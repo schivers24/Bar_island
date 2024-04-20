@@ -1,6 +1,54 @@
-```{r read-in-data}
+```{r packages}
+# install.packages("tidyverse")
+library(tidyverse)
 library(readr)
-bar_24 <- read_csv("data/sand_bar_to_bar_island_usage_survey-2024-04-17_08.05.40.csv")
+```
+
+
+```{r read-in-data}
+bar_24_raw <- read_csv("data/sand_bar_to_bar_island_usage_survey-2024-04-17_08.05.40.csv")
 
 ```
+
+```{r clean-data}
+bar_24 <- bar_24_raw %>%
+  select(observed, Number_of_Adult_Pedestrians, Number_of_Children_Pedestrians,Vehicles_that_drove_on_the_Bar_without_parking_or_picking_up_passengers, Vehicles_that_drove_on_to_the_Bar_and_parked, Vehicles_that_drove_on_the_Bar_for_official_purposes__park_vehicle_headed_to_Bar_Island__Bar_Harbor_Police__or_municipal, Dogs_on_leash, Dogs_off_leash, Number_of_instances_of_dogs_defecating_and_owners_picking_it_up, Number_of_instances_of_dogs_defecating_and_owners_NOT_picking_it_up, `Number_of_private_kayak_groups_(arriving_with_personal_vehicles)`, Number_of_private_kayaks_launched, Number_of_other_boats_launched, Number_of_people_fishing, Number_of_people_birding, Number_of_people_in_the_water, `Number_of_wildlife_disturbances_(if_a_dog_disturbs_a_group_of_birds_count_as_one)_`, Number_of_bicyclists, Current_Weather) 
+
+colnames(bar_24) <- c("observed", "adult_pedestrians", "child_pedestrians","vehicles_no_parking", "vehicles_parking", "vehicles_official", "dogs_leash", "dogs_off_leash", "dogs_defecating_pick_up", "dogs_defecating_no_pick_up", "kayak_group", "private_kayaks", "other_boats", "fishers", "birders", "swimmers_waders", "wildlife_disturbances", "bicyclists", "weather")
+
+bar_24 <- bar_24 %>% 
+  mutate_if(is.numeric, replace_na, replace = 0) %>%
+  filter(!row_number() %in% c(1, 16))
+
+bar_24$observed <- as_datetime(bar_24$observed)
+
+
+```
+
+```{r visualizations}
+bar_24 %>%
+  ggplot(
+    mapping = aes(
+      x = observed, 
+      y = adult_pedestrians)) +
+    geom_line() 
+
+bar_24 %>%
+  ggplot(
+    mapping = aes(
+      x = observed, 
+      y = child_pedestrians)) +
+    geom_line() 
+
+bar_24 %>%
+  select(adult_pedestrians, child_pedestrians,observed) %>%
+  mutate(total_pedestrians = rowSums(across(where(is.numeric)))) %>%
+  ggplot(
+    mapping = aes(
+      x = observed, 
+      y = total_pedestrians)) +
+    geom_line() 
+```
+
+
 
