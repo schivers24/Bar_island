@@ -22,10 +22,17 @@ bar_24 <- bar_24 %>%
 
 bar_24$observed <- as_datetime(bar_24$observed)
 
+bar_24 <- bar_24 %>%
+  mutate(total_pedestrians = rowSums(bar_24[ , c("adult_pedestrians", "child_pedestrians")], na.rm=TRUE))
+
+bar_24 <- bar_24 %>%
+  mutate(weather = as_factor(bar_24$weather))
+
+# bar_24 <-mutate(weather = fct_relevel(bar_24$weather, c("clear", "partly cloudy", "overcast", "rain")))
 
 ```
 
-```{r visualizations}
+```{r line_plots}
 bar_24 %>%
   ggplot(
     mapping = aes(
@@ -41,14 +48,36 @@ bar_24 %>%
     geom_line() 
 
 bar_24 %>%
-  select(adult_pedestrians, child_pedestrians,observed) %>%
-  mutate(total_pedestrians = rowSums(across(where(is.numeric)))) %>%
   ggplot(
     mapping = aes(
       x = observed, 
       y = total_pedestrians)) +
     geom_line() 
+
+
+# pedestrians <- 
+#   
+# # Plot
+# bar_24 %>% 
+#   select(adult_pedestrians, child_pedestrians, observed) %>%
+#   ggplot( 
+#     aes(x=observed, y=n, group=name, color=name)) +
+#     geom_line()
 ```
+
+```{r}
+bar_24 %>%
+  ggplot( 
+    aes(
+      x = weather, 
+      y = total_pedestrians)) + 
+  geom_bar(stat="identity")
+
+
+```
+
+
+
 
 
 
