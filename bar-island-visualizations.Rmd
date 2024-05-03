@@ -10,6 +10,7 @@ output:
 # install.packages("tidyverse")
 library(tidyverse)
 library(readr)
+library(readxl)
 ```
 
 ```{r read-in-data, echo=FALSE, message=FALSE}
@@ -161,3 +162,53 @@ bar_24_long %>%
   )
 
 ```
+```{r effort-calculations}
+d <- bar_24 %>%
+  mutate(date = date(observed)) %>%
+  distinct(date) %>%
+  nrow()
+
+specific_use_per_day <- bar_24_long %>% 
+  group_by(use) %>%
+  summarize(n_per_day = sum(number)/d) %>%
+  print()
+
+specific_use <- bar_24_long %>% 
+  group_by(use) %>%
+  summarize(n = sum(number)) %>%
+  print()
+
+specific_use_tibble <- full_join(specific_use, specific_use_per_day)
+
+general_use_per_day <- bar_24_long %>% 
+  filter(general_use != "dog_poo") %>%
+  group_by(general_use) %>%
+  summarize(n_per_day = sum(number)/d)%>%
+  print()
+
+general_use <- bar_24_long %>% 
+  filter(general_use != "dog_poo") %>%
+  group_by(general_use) %>%
+  summarize(n = sum(number)) %>%
+  print()
+
+general_use_tibble <- full_join(general_use, general_use_per_day) %>%
+  mutate(year = as.numeric("2023"))
+
+data_2006 <- read_excel("data/2006 data.xlsx")
+
+full_join(general_use_tibble, data_2006, by = "general_use")
+
+```
+
+```{r}
+general_use_tibble %>% 
+  ggplot( 
+    aes(
+      x = general_use, 
+      y = n_per_day, 
+      fill = general_use
+    )) + 
+  geom_bar(stat = "identity")
+```
+
