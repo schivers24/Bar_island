@@ -1,16 +1,23 @@
-```{r packages}
+---
+title: "Bar Island Data Analysis—Draft One"
+author: "Sophie Chivers"
+date: "April 26, 2024"
+output:
+  html_document: default
+---
+
+```{r packages, echo=FALSE, message=FALSE}
 # install.packages("tidyverse")
 library(tidyverse)
 library(readr)
 ```
 
-
-```{r read-in-data}
+```{r read-in-data, echo=FALSE, message=FALSE}
 bar_24_raw <- read_csv("data/sand_bar_to_bar_island_usage_survey-2024-04-17_08.05.40.csv")
 
 ```
 
-```{r clean-data}
+```{r clean-bar_24, echo=FALSE, message=FALSE, warning=FALSE}
 bar_24 <- bar_24_raw %>%
   select(observed, Number_of_Adult_Pedestrians, Number_of_Children_Pedestrians,Vehicles_that_drove_on_the_Bar_without_parking_or_picking_up_passengers, Vehicles_that_drove_on_to_the_Bar_and_parked, Vehicles_that_drove_on_the_Bar_for_official_purposes__park_vehicle_headed_to_Bar_Island__Bar_Harbor_Police__or_municipal, Dogs_on_leash, Dogs_off_leash, Number_of_instances_of_dogs_defecating_and_owners_picking_it_up, Number_of_instances_of_dogs_defecating_and_owners_NOT_picking_it_up, `Number_of_private_kayak_groups_(arriving_with_personal_vehicles)`, Number_of_private_kayaks_launched, Number_of_other_boats_launched, Number_of_people_fishing, Number_of_people_birding, Number_of_people_in_the_water, `Number_of_wildlife_disturbances_(if_a_dog_disturbs_a_group_of_birds_count_as_one)_`, Number_of_bicyclists, Current_Weather) 
 
@@ -23,36 +30,84 @@ bar_24 <- bar_24 %>%
 bar_24$observed <- as_datetime(bar_24$observed)
 
 bar_24 <- bar_24 %>%
-  mutate(total_pedestrians = rowSums(bar_24[ , c("adult_pedestrians", "child_pedestrians")], na.rm=TRUE))
-
-bar_24 <- bar_24 %>%
   mutate(weather = as_factor(bar_24$weather))
+
+bar_24_with_total <- bar_24 %>%
+  mutate(total_pedestrians = rowSums(bar_24[ , c("adult_pedestrians", "child_pedestrians")], na.rm=TRUE))
 
 # bar_24 <-mutate(weather = fct_relevel(bar_24$weather, c("clear", "partly cloudy", "overcast", "rain")))
 
 ```
 
-```{r line_plots}
+```{r pivot_longer, echo=FALSE, message=FALSE, warning=FALSE}
+bar_24_long <- bar_24 %>%
+  pivot_longer(! c(observed, weather),
+    names_to = "use",
+    values_to = "number") %>%
+  group_by(use) %>%
+  mutate(general_use = case_when(
+         use == "adult_pedestrians" ~ "pedestrians", 
+         use == "child_pedestrians" ~ "pedestrians", 
+         use == "vehicles_no_parking" ~ "vehicles", 
+         use == "vehicles_parking" ~ "vehicles",
+         use == "vehicles_official" ~ "vehicles",
+         use == "dogs_leash" ~ "dogs", 
+         use == "dogs_off_leash" ~ "dogs",
+         use == "dogs_defecating_pick_up" ~ "dog_poo", 
+         use == "dogs_defecating_no_pick_up" ~ "dog_poo",
+         use == "kayak_group" ~ "kayak", 
+         use == "private_kayaks" ~ "kayak", 
+         use == "other_boats" ~ "boats", 
+         use == "fishers" ~ "other_rec", 
+         use == "birders" ~ "other_rec", 
+         use == "swimmers_waders" ~ "other_rec", 
+         use == "wildlife_disturbances" ~ "wildlife_disturbances", 
+         use == "bicyclists" ~ "bikes")) %>%
+  mutate(date = date(observed))
+```
+
+# Data Visualization
+## Line Plots
+
+```{r line_plots, echo=FALSE, message=FALSE, warning=FALSE}
 bar_24 %>%
   ggplot(
     mapping = aes(
       x = observed, 
       y = adult_pedestrians)) +
-    geom_line() 
+    geom_line() + 
+  labs( 
+    title = "Adult Pedestrians on the Bar Over Time")
 
 bar_24 %>%
   ggplot(
     mapping = aes(
       x = observed, 
       y = child_pedestrians)) +
-    geom_line() 
+    geom_line() + 
+  labs(
+    title = "Number of Children Walking on Bar over Time"
+  )
 
-bar_24 %>%
-  ggplot(
-    mapping = aes(
-      x = observed, 
-      y = total_pedestrians)) +
-    geom_line() 
+# bar_24 %>%
+#   ggplot(
+#     mapping = aes(
+#       x = observed, 
+#       y = total_pedestrians)) +
+#     geom_line() 
+
+bar_24_long %>%
+  select(c(date, general_use, number)) %>%
+  group_by(general_use) %>%
+  ggplot( 
+    aes( 
+      x = date, 
+      y = number, 
+      color = general_use, na.rm)) + 
+  geom_line() + 
+  labs(
+    title = "Frequency of Use over Time"
+  )
 
 
 # pedestrians <- 
@@ -65,19 +120,44 @@ bar_24 %>%
 #     geom_line()
 ```
 
-```{r}
-bar_24 %>%
+## Bar Plots
+```{r bar_plots, echo=FALSE, message=FALSE, warning=FALSE}
+# bar_24_long %>%
+#   filter(general_use == c("bikes", "boats", "dogs", "kayak", "other_rec", "pedestrians", "vehicles", "wildlife_disturbances")) %>%
+#   ggplot(
+#     aes(
+#       fill = general_use, 
+#       x = general_use, 
+#       y = number)) + 
+#   geom_bar(position= "dodge", stat = "identity") + 
+#   labs( 
+#     title = "Bar Island Visitation by Type of Use")
+
+bar_24_long %>%
+  group_by(general_use) %>%
   ggplot( 
     aes(
+      fill = general_use,
       x = weather, 
-      y = total_pedestrians)) + 
-  geom_bar(stat="identity")
+      y = number)) + 
+  geom_bar(position="dodge", stat="identity") + 
+  labs( 
+    title = "Bar Island Bar Useage by Type of Use and Weather", 
+    x = "Weather",
+    y = "Number of Visitors", 
+    ) 
 
+bar_24_long %>%
+  filter(general_use == c("pedestrians", "vehicles", "kayak", "bikes", "dogs")) %>%
+  ggplot( 
+    aes(
+      fill = general_use,
+      x = general_use, 
+      y = number
+    )) +
+  geom_bar(stat = "identity") + 
+  labs(
+    title = "Number of Visitors by Use"
+  )
 
 ```
-
-
-
-
-
-
