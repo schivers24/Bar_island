@@ -1,10 +1,12 @@
 ---
 title: "Bar Island Data Analysis"
 author: "Sophie Chivers"
-date: "May 4th, 2024"
+date: "10 May 2024"
 output:
   html_document: 
-  pdf: 
+  pdf:
+    documentclass: scrartcl
+    papersize: letter
 execute: 
   echo: false
   message: false
@@ -29,23 +31,53 @@ bar_24_raw <- read_csv("data/sand_bar_to_bar_island_usage_survey-2024-04-17_08.0
 ```{r}
 #| label: clean-bar_24
 bar_24 <- bar_24_raw %>%
-  select(observed, Number_of_Adult_Pedestrians, Number_of_Children_Pedestrians,Vehicles_that_drove_on_the_Bar_without_parking_or_picking_up_passengers, Vehicles_that_drove_on_to_the_Bar_and_parked, Vehicles_that_drove_on_the_Bar_for_official_purposes__park_vehicle_headed_to_Bar_Island__Bar_Harbor_Police__or_municipal, Dogs_on_leash, Dogs_off_leash, Number_of_instances_of_dogs_defecating_and_owners_picking_it_up, Number_of_instances_of_dogs_defecating_and_owners_NOT_picking_it_up, `Number_of_private_kayak_groups_(arriving_with_personal_vehicles)`, Number_of_private_kayaks_launched, Number_of_other_boats_launched, Number_of_people_fishing, Number_of_people_birding, Number_of_people_in_the_water, `Number_of_wildlife_disturbances_(if_a_dog_disturbs_a_group_of_birds_count_as_one)_`, Number_of_bicyclists, Current_Weather) 
+  select(observed, 
+         Number_of_Adult_Pedestrians, 
+         Number_of_Children_Pedestrians,
+         Vehicles_that_drove_on_the_Bar_without_parking_or_picking_up_passengers, 
+         Vehicles_that_drove_on_to_the_Bar_and_parked, 
+         Vehicles_that_drove_on_the_Bar_for_official_purposes__park_vehicle_headed_to_Bar_Island__Bar_Harbor_Police__or_municipal, 
+         Dogs_on_leash, Dogs_off_leash, 
+         Number_of_instances_of_dogs_defecating_and_owners_picking_it_up, 
+         Number_of_instances_of_dogs_defecating_and_owners_NOT_picking_it_up, 
+         `Number_of_private_kayak_groups_(arriving_with_personal_vehicles)`, 
+         Number_of_private_kayaks_launched, Number_of_other_boats_launched, 
+         Number_of_people_fishing, 
+         Number_of_people_birding, 
+         Number_of_people_in_the_water, 
+         `Number_of_wildlife_disturbances_(if_a_dog_disturbs_a_group_of_birds_count_as_one)_`, 
+         Number_of_bicyclists, 
+         Current_Weather
+         ) 
 
-colnames(bar_24) <- c("observed", "adult_pedestrians", "child_pedestrians","vehicles_no_parking", "vehicles_parking", "vehicles_official", "dogs_leash", "dogs_off_leash", "dogs_defecating_pick_up", "dogs_defecating_no_pick_up", "kayak_group", "private_kayaks", "other_boats", "fishers", "birders", "swimmers_waders", "wildlife_disturbances", "bicyclists", "weather")
-
-bar_24 <- bar_24 %>% 
+colnames(bar_24) <- c("observed", 
+                      "adult_pedestrians", 
+                      "child_pedestrians",
+                      "vehicles_no_parking", 
+                      "vehicles_parking", 
+                      "vehicles_official", 
+                      "dogs_leash", 
+                      "dogs_off_leash", 
+                      "dogs_defecating_pick_up", 
+                      "dogs_defecating_no_pick_up", 
+                      "kayak_group", 
+                      "private_kayaks", 
+                      "other_boats", 
+                      "fishers", 
+                      "birders", 
+                      "swimmers_waders", 
+                      "wildlife_disturbances", 
+                      "bicyclists", 
+                      "weather")
+ bar_24 <- bar_24 %>% 
   mutate_if(is.numeric, replace_na, replace = 0) %>%
-  filter(!row_number() %in% c(1, 16))
+  mutate(kayak_group = case_when(kayak_group == -4 ~ 4, 
+                                 TRUE ~ kayak_group))
 
 bar_24$observed <- as_datetime(bar_24$observed)
 
 bar_24 <- bar_24 %>%
   mutate(weather = as_factor(bar_24$weather))
-
-bar_24_with_total <- bar_24 %>%
-  mutate(total_pedestrians = rowSums(bar_24[ , c("adult_pedestrians", "child_pedestrians")], na.rm=TRUE))
-
-# bar_24 <-mutate(weather = fct_relevel(bar_24$weather, c("clear", "partly cloudy", "overcast", "rain")))
 
 ```
 
@@ -156,50 +188,48 @@ bar_24_long_daily_summary %>%
 # #     geom_line()
 ```
 
-## Bar Plots
-
 ```{r}
 #| label: Bar plots
 
+# # bar_24_long %>%
+# #   filter(general_use == c("bikes", "boats", "dogs", "kayak", "other_rec", "pedestrians", "vehicles", "wildlife_disturbances")) %>%
+# #   ggplot(
+# #     aes(
+# #       fill = general_use, 
+# #       x = general_use, 
+# #       y = number)) + 
+# #   geom_bar(position= "dodge", stat = "identity") + 
+# #   labs( 
+# #     title = "Bar Island Visitation by Type of Use")
+# 
 # bar_24_long %>%
-#   filter(general_use == c("bikes", "boats", "dogs", "kayak", "other_rec", "pedestrians", "vehicles", "wildlife_disturbances")) %>%
+#   # group_by(general_use) %>%
 #   ggplot(
 #     aes(
-#       fill = general_use, 
+#       # fill = general_use,
+#       x = weather,
+#       y = number)) +
+#   geom_bar(position="dodge", stat="identity") +
+#   labs(
+#     title = "2023 Bar Island Bar Useage by Type of Use and Weather",
+#     x = "Weather",
+#     y = "Number of Visitors",
+#     )
+
+# bar_24_long %>%
+#   filter(general_use == c("pedestrians", "vehicles", "kayak", "bikes", "dogs")) %>%
+#   ggplot( 
+#     aes(
+#       fill = general_use,
 #       x = general_use, 
-#       y = number)) + 
-#   geom_bar(position= "dodge", stat = "identity") + 
-#   labs( 
-#     title = "Bar Island Visitation by Type of Use")
-
-bar_24_long %>%
-  group_by(general_use) %>%
-  ggplot( 
-    aes(
-      fill = general_use,
-      x = weather, 
-      y = number)) + 
-  geom_bar(position="dodge", stat="identity") + 
-  labs( 
-    title = "2023 Bar Island Bar Useage by Type of Use and Weather", 
-    x = "Weather",
-    y = "Number of Visitors", 
-    ) 
-
-bar_24_long %>%
-  filter(general_use == c("pedestrians", "vehicles", "kayak", "bikes", "dogs")) %>%
-  ggplot( 
-    aes(
-      fill = general_use,
-      x = general_use, 
-      y = number
-    )) +
-  geom_bar(stat = "identity") + 
-  labs(
-    title = "Total Number of Visitors in 2023 by Use", 
-    x = "Use Type", 
-    y = "Numbe of Visitors"
-  )
+#       y = number
+#     )) +
+#   geom_bar(stat = "identity") + 
+#   labs(
+#     title = "Total Number of Visitors in 2023 by Use", 
+#     x = "Use Type", 
+#     y = "Number of Visitors"
+#   )
 
 ```
 
@@ -258,26 +288,30 @@ use_06 <- data_2006 %>%
   select(c(general_use, n, year))
 
 use_per_day <- bind_rows(use_per_day_06, use_per_day_23) %>%
-  mutate(year = as.character(year)) 
+  mutate(year = as.character(year)) %>%
+  mutate(n_per_day = round(n_per_day))
 
 use <- bind_rows(use_06, use_23) %>%
-  mutate(year = as.character(year))
+  mutate(year = as.character(year)) 
 
 # Things I want to improve here: 
 # 1) Make one column for 2023 and one for 2006 "n per days"
 # 2) Round to the nearest visitor 
 
-kable(use, 
+kable(use %>%
+  pivot_wider(names_from = year, 
+              values_from = n), 
       caption = "Table of Total Counted Visitors by Use Type for 2006 and 2023")
 
-kable(use_per_day, 
+kable(use_per_day %>% 
+  pivot_wider(names_from = year, 
+              values_from = n_per_day), 
       caption = "Table of Average Users per day by Use Type for 2006 and 2023")
 
 ```
 
 ```{r}
 #| label: Comparative plots
-
 use_per_day %>% 
   filter(!general_use %in% c("boats", "other_rec", "wildlife_disturbances")) %>%
   ggplot( 

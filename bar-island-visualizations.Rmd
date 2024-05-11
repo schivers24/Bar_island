@@ -232,4 +232,10 @@ use_per_day %>%
     )) + 
   geom_bar(position = "dodge", stat = "identity")
 ```
+```{r}
+library(readr)
+write_csv(bar_24, file = "../bar-island/data/bar_24.csv") 
+write_csv(use_per_day_23, file = "../bar-island/data/use_per_day_23.csv")
+
+```
 
